@@ -1,10 +1,16 @@
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct SpaydVersion {
     pub major: u32,
     pub minor: u32,
+}
+
+impl SpaydVersion {
+    pub fn new(major: u32, minor: u32) -> Self {
+        Self { major, minor }
+    }
 }
 
 type SpaydValues<'a> = BTreeMap<Cow<'a, str>, Cow<'a, str>>;
