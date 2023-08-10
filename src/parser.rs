@@ -1,9 +1,10 @@
-use crate::spayd::SpaydVersion;
+use crate::spayd::{SpaydValues, SpaydVersion};
 use nom::{
-    bytes::complete::{tag, take_while_m_n},
+    bytes::complete::{is_not, tag, take_until1},
     character::complete::digit1,
     combinator::{map, map_res},
-    sequence::{delimited, separated_pair, tuple},
+    multi::separated_list0,
+    sequence::{delimited, separated_pair, terminated},
     IResult,
 };
 
@@ -22,8 +23,23 @@ fn header(input: &str) -> IResult<&str, SpaydVersion> {
     delimited(tag("SPD*"), version, tag("*"))(input)
 }
 
+fn kv_pair(input: &str) -> IResult<&str, (&str, &str)> {
+    separated_pair(take_until1(":"), tag(":"), is_not("*"))(input)
+}
+
+fn values(input: &str) -> IResult<&str, SpaydValues> {
+    map(separated_list0(tag("*"), kv_pair), |items| {
+        items
+            .into_iter()
+            .map(|(k, v)| (k.into(), v.into()))
+            .collect()
+    })(input)
+}
+
 #[cfg(test)]
 mod tests {
+    // All xxample data is from wikipedia
+    // https://en.wikipedia.org/wiki/Short_Payment_Descriptor
     use super::*;
 
     #[test]
@@ -40,6 +56,39 @@ mod tests {
         assert_eq!(
             header("SPD*1.0*ACC:..."),
             Ok(("ACC:...", SpaydVersion::new(1, 0)))
+        );
+    }
+
+    #[test]
+    fn parse_kv() {
+        assert_eq!(
+            kv_pair("ACC:CZ5855000000001265098001"),
+            Ok(("", ("ACC", "CZ5855000000001265098001")))
+        );
+        assert_eq!(kv_pair("AM:480.50"), Ok(("", ("AM", "480.50"))));
+        assert_eq!(
+            kv_pair("MSG:Payment for the goods"),
+            Ok(("", ("MSG", "Payment for the goods")))
+        );
+    }
+
+    #[test]
+    fn parse_values() {
+        let parsed =
+            values("ACC:CZ5855000000001265098001*AM:480.50*CC:CZK*MSG:Payment for the goods")
+                .unwrap();
+        assert_eq!(parsed.0, "");
+
+        let kv_pairs = parsed.1;
+        assert_eq!(
+            kv_pairs.get("ACC").map(AsRef::as_ref),
+            Some("CZ5855000000001265098001")
+        );
+        assert_eq!(kv_pairs.get("AM").map(AsRef::as_ref), Some("480.50"));
+        assert_eq!(kv_pairs.get("CC").map(AsRef::as_ref), Some("CZK"));
+        assert_eq!(
+            kv_pairs.get("MSG").map(AsRef::as_ref),
+            Some("Payment for the goods")
         );
     }
 }
