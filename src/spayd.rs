@@ -22,18 +22,16 @@ pub struct Spayd<'a> {
 }
 
 impl<'a> Spayd<'a> {
+    pub fn new(version: SpaydVersion, values: SpaydValues<'a>) -> Self {
+        Self { version, values }
+    }
+
     pub fn empty(version: SpaydVersion) -> Self {
-        Self {
-            version,
-            values: BTreeMap::new(),
-        }
+        Self::new(version, SpaydValues::new())
     }
 
     pub fn empty_v1_0() -> Self {
-        Self {
-            version: SpaydVersion { major: 1, minor: 0 },
-            values: BTreeMap::new(),
-        }
+        Self::empty(SpaydVersion { major: 1, minor: 0 })
     }
 
     pub fn version(&self) -> SpaydVersion {

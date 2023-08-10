@@ -1,11 +1,12 @@
-use crate::spayd::{SpaydValues, SpaydVersion};
+use crate::spayd::{Spayd, SpaydValues, SpaydVersion};
 use nom::{
     bytes::complete::{is_not, tag, take_until1},
     character::complete::digit1,
-    combinator::{map, map_res},
+    combinator::{complete, map, map_res},
+    error::Error,
     multi::separated_list0,
-    sequence::{delimited, separated_pair, terminated},
-    IResult,
+    sequence::{delimited, pair, separated_pair},
+    Finish, IResult,
 };
 
 fn version_section(input: &str) -> IResult<&str, u32> {
@@ -34,6 +35,17 @@ fn values(input: &str) -> IResult<&str, SpaydValues> {
             .map(|(k, v)| (k.into(), v.into()))
             .collect()
     })(input)
+}
+
+fn full_text(input: &str) -> IResult<&str, Spayd> {
+    map(pair(header, values), |(version, values)| {
+        Spayd::new(version, values)
+    })(input)
+}
+
+pub fn parse_spayd(input: &str) -> Result<Spayd, Error<&str>> {
+    let parsed = complete(full_text)(input).finish()?;
+    Ok(parsed.1)
 }
 
 #[cfg(test)]
@@ -90,5 +102,21 @@ mod tests {
             kv_pairs.get("MSG").map(AsRef::as_ref),
             Some("Payment for the goods")
         );
+    }
+
+    #[test]
+    fn full_example() {
+        let spayd = parse_spayd(
+            "SPD*1.0*ACC:CZ5855000000001265098001*AM:480.50*CC:CZK*MSG:Payment for the goods",
+        )
+        .unwrap();
+
+        assert_eq!(spayd.version(), SpaydVersion::new(1, 0));
+        assert_eq!(spayd.value("ACC"), Some("CZ5855000000001265098001"));
+        assert_eq!(spayd.value("AM"), Some("480.50"));
+        assert_eq!(spayd.value("CC"), Some("CZK"));
+        assert_eq!(spayd.value("MSG"), Some("Payment for the goods"));
+        assert_eq!(spayd.value("ALT-ACC"), None);
+        assert_eq!(spayd.value("RF"), None);
     }
 }
