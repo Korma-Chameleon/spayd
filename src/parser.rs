@@ -1,10 +1,10 @@
 use crate::spayd::{Spayd, SpaydValues, SpaydVersion};
 use nom::{
-    bytes::complete::{is_not, tag, take_until1},
+    bytes::complete::{is_not, tag, take_until1, take_while},
     character::complete::digit1,
-    combinator::{complete, map, map_res},
+    combinator::{all_consuming, map, map_parser, map_res},
     error::Error,
-    multi::separated_list0,
+    multi::separated_list1,
     sequence::{delimited, pair, separated_pair},
     Finish, IResult,
 };
@@ -29,7 +29,7 @@ fn kv_pair(input: &str) -> IResult<&str, (&str, &str)> {
 }
 
 fn values(input: &str) -> IResult<&str, SpaydValues> {
-    map(separated_list0(tag("*"), kv_pair), |items| {
+    map(separated_list1(tag("*"), kv_pair), |items| {
         items
             .into_iter()
             .map(|(k, v)| (k.into(), v.into()))
@@ -43,8 +43,13 @@ fn full_text(input: &str) -> IResult<&str, Spayd> {
     })(input)
 }
 
+fn is_ascii_printable(c: char) -> bool {
+    c.is_ascii() && !c.is_ascii_control()
+}
+
 pub fn parse_spayd(input: &str) -> Result<Spayd, Error<&str>> {
-    let parsed = complete(full_text)(input).finish()?;
+    let parsed =
+        all_consuming(map_parser(take_while(is_ascii_printable), full_text))(input).finish()?;
     Ok(parsed.1)
 }
 
@@ -118,5 +123,18 @@ mod tests {
         assert_eq!(spayd.value("MSG"), Some("Payment for the goods"));
         assert_eq!(spayd.value("ALT-ACC"), None);
         assert_eq!(spayd.value("RF"), None);
+    }
+
+    #[test]
+    fn incomplete() {
+        assert!(parse_spayd("SPD*1.0").is_err());
+        assert!(parse_spayd("SPD*1.0*").is_err());
+        assert!(parse_spayd("SPD*1.0*ACC").is_err());
+        assert!(parse_spayd("SPD*1.0*ACC:").is_err());
+    }
+
+    #[test]
+    fn non_ascii() {
+        assert!(parse_spayd("SPD*1.0*PŘÍKLAD:123").is_err());
     }
 }

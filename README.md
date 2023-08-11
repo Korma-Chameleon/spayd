@@ -7,7 +7,6 @@ QR codes which can be scanned into a mobile banking app.
 
 ## TODO
 Output SPAYD structure as text
-Enforce ASCII printable characters
 Enforce Required fields
 Percent encode/decode of non-ascii
 CRC32 checks
