@@ -1,12 +1,12 @@
 use crate::spayd::{Spayd, SpaydString, SpaydValues, SpaydVersion};
 use nom::{
-    bytes::complete::{escaped_transform, is_not, tag, take_until1, take_while},
+    bytes::complete::{is_not, tag, take_until1, take_while},
     character::complete::digit1,
     combinator::{all_consuming, map, map_parser, map_res},
     error::{Error, ErrorKind},
     multi::separated_list1,
     sequence::{delimited, pair, separated_pair},
-    Err, Finish, IResult,
+    Finish, IResult,
 };
 use percent_encoding::percent_decode_str;
 
