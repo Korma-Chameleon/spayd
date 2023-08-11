@@ -8,6 +8,6 @@ QR codes which can be scanned into a mobile banking app.
 ## TODO
 Output SPAYD structure as text
 Enforce Required fields
-Percent encode/decode of non-ascii
+Percent encode of non-ascii
 CRC32 checks
 Value convewrsions for dates, IBAN, currency symbol etc

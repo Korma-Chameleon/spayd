@@ -1,13 +1,14 @@
-use crate::spayd::{Spayd, SpaydValues, SpaydVersion};
+use crate::spayd::{Spayd, SpaydString, SpaydValues, SpaydVersion};
 use nom::{
-    bytes::complete::{is_not, tag, take_until1, take_while},
+    bytes::complete::{escaped_transform, is_not, tag, take_until1, take_while},
     character::complete::digit1,
     combinator::{all_consuming, map, map_parser, map_res},
-    error::Error,
+    error::{Error, ErrorKind},
     multi::separated_list1,
     sequence::{delimited, pair, separated_pair},
-    Finish, IResult,
+    Err, Finish, IResult,
 };
+use percent_encoding::percent_decode_str;
 
 fn version_section(input: &str) -> IResult<&str, u32> {
     map_res(digit1, str::parse)(input)
@@ -24,16 +25,32 @@ fn header(input: &str) -> IResult<&str, SpaydVersion> {
     delimited(tag("SPD*"), version, tag("*"))(input)
 }
 
-fn kv_pair(input: &str) -> IResult<&str, (&str, &str)> {
-    separated_pair(take_until1(":"), tag(":"), is_not("*"))(input)
+fn decode_spayd_string(i: &str) -> Result<SpaydString, Error<&str>> {
+    match percent_decode_str(i).decode_utf8() {
+        Ok(t) => Ok(t.into()),
+        Err(_) => Err(Error::new(i, ErrorKind::Escaped)),
+    }
+}
+
+fn decode_spayd_kv<'a>(
+    k: &'a str,
+    v: &'a str,
+) -> Result<(SpaydString<'a>, SpaydString<'a>), Error<&'a str>> {
+    let k = decode_spayd_string(k)?;
+    let v = decode_spayd_string(v)?;
+    Ok((k, v))
+}
+
+fn kv_pair(input: &str) -> IResult<&str, (SpaydString, SpaydString)> {
+    map_res(
+        separated_pair(take_until1(":"), tag(":"), is_not("*")),
+        |(k, v)| decode_spayd_kv(k, v),
+    )(input)
 }
 
 fn values(input: &str) -> IResult<&str, SpaydValues> {
     map(separated_list1(tag("*"), kv_pair), |items| {
-        items
-            .into_iter()
-            .map(|(k, v)| (k.into(), v.into()))
-            .collect()
+        items.into_iter().collect()
     })(input)
 }
 
@@ -55,7 +72,7 @@ pub fn parse_spayd(input: &str) -> Result<Spayd, Error<&str>> {
 
 #[cfg(test)]
 mod tests {
-    // All xxample data is from wikipedia
+    // Most xxample data is from wikipedia
     // https://en.wikipedia.org/wiki/Short_Payment_Descriptor
     use super::*;
 
@@ -80,12 +97,27 @@ mod tests {
     fn parse_kv() {
         assert_eq!(
             kv_pair("ACC:CZ5855000000001265098001"),
-            Ok(("", ("ACC", "CZ5855000000001265098001")))
+            Ok(("", ("ACC".into(), "CZ5855000000001265098001".into())))
         );
-        assert_eq!(kv_pair("AM:480.50"), Ok(("", ("AM", "480.50"))));
+        assert_eq!(
+            kv_pair("AM:480.50"),
+            Ok(("", ("AM".into(), "480.50".into())))
+        );
         assert_eq!(
             kv_pair("MSG:Payment for the goods"),
-            Ok(("", ("MSG", "Payment for the goods")))
+            Ok(("", ("MSG".into(), "Payment for the goods".into())))
+        );
+    }
+
+    #[test]
+    fn percent_encoded_kv() {
+        assert_eq!(
+            kv_pair("MSG:%40%3F%2A%24%21"),
+            Ok(("", ("MSG".into(), "@?*$!".into())))
+        );
+        assert_eq!(
+            kv_pair("RN:Krte%C4%8Dek"),
+            Ok(("", ("RN".into(), "Krteček".into())))
         );
     }
 
@@ -110,6 +142,14 @@ mod tests {
     }
 
     #[test]
+    fn percent_encoded_values() {
+        let parsed = values("MSG:%40%3F%2A%24%21").unwrap();
+        let kv_pairs = parsed.1;
+
+        assert_eq!(kv_pairs.get("MSG").map(AsRef::as_ref), "@?*$!".into());
+    }
+
+    #[test]
     fn full_example() {
         let spayd = parse_spayd(
             "SPD*1.0*ACC:CZ5855000000001265098001*AM:480.50*CC:CZK*MSG:Payment for the goods",
@@ -123,6 +163,13 @@ mod tests {
         assert_eq!(spayd.value("MSG"), Some("Payment for the goods"));
         assert_eq!(spayd.value("ALT-ACC"), None);
         assert_eq!(spayd.value("RF"), None);
+    }
+
+    #[test]
+    fn percent_encoded() {
+        let spayd = parse_spayd("SPD*1.0*MSG:%40%3F%2A%24%21").unwrap();
+
+        assert_eq!(spayd.value("MSG"), Some("@?*$!"));
     }
 
     #[test]

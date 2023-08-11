@@ -13,7 +13,8 @@ impl SpaydVersion {
     }
 }
 
-pub type SpaydValues<'a> = BTreeMap<Cow<'a, str>, Cow<'a, str>>;
+pub type SpaydString<'a> = Cow<'a, str>;
+pub type SpaydValues<'a> = BTreeMap<SpaydString<'a>, SpaydString<'a>>;
 
 #[derive(Clone)]
 pub struct Spayd<'a> {
