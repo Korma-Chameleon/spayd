@@ -45,8 +45,8 @@ impl<'a> Spayd<'a> {
 
     pub fn set_value<K, V>(&mut self, key: K, value: V)
     where
-        K: Into<Cow<'a, str>>,
-        V: Into<Cow<'a, str>>,
+        K: Into<SpaydString<'a>>,
+        V: Into<SpaydString<'a>>,
     {
         self.values.insert(key.into(), value.into());
     }
