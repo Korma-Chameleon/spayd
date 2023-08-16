@@ -12,7 +12,7 @@ QR scanning is already implemented in libraries such as
 methods on mobile OSs.
 
 ## TODO
-Enforce Required fields
-Percent encode of non-ascii
-CRC32 checks
-Value convewrsions for dates, IBAN, currency symbol etc
+- Enforce Required fields
+- CRC32 checks
+- Value convewrsions for dates, IBAN, currency symbol etc
+- Docs

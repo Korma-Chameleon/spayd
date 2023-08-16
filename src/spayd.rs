@@ -1,3 +1,4 @@
+use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
@@ -73,10 +74,14 @@ impl<'a> Spayd<'a> {
     }
 }
 
+const ESCAPED: &AsciiSet = &CONTROLS.add(b'%').add(b'*');
+
 impl<'a> Display for Spayd<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "SPD*{}.{}", self.version.major, self.version.minor)?;
         for (k, v) in self.values.iter() {
+            let k = utf8_percent_encode(k, ESCAPED).to_string();
+            let v = utf8_percent_encode(v, ESCAPED).to_string();
             write!(f, "*{}:{}", k, v)?;
         }
         Ok(())
@@ -111,5 +116,14 @@ mod tests {
             spayd.to_string(),
             "SPD*1.0*ACC:CZ5855000000001265098001*AM:480.50*CC:CZK*MSG:Payment for the goods"
         );
+    }
+
+    #[test]
+    fn percent_encoding() {
+        let spayd = Spayd::new_v1_0(vec![("MSG", "****!")]);
+        assert_eq!(spayd.to_string(), "SPD*1.0*MSG:%2A%2A%2A%2A!");
+
+        let spayd = Spayd::new_v1_0(vec![("MSG", "PŘÍKLAD")]);
+        assert_eq!(spayd.to_string(), "SPD*1.0*MSG:P%C5%98%C3%8DKLAD");
     }
 }

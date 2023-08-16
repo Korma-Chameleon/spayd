@@ -25,7 +25,7 @@ fn header(input: &str) -> IResult<&str, SpaydVersion> {
     delimited(tag("SPD*"), version, tag("*"))(input)
 }
 
-fn decode_spayd_string(i: &str) -> Result<SpaydString, Error<&str>> {
+fn decode_percent_encoding(i: &str) -> Result<SpaydString, Error<&str>> {
     match percent_decode_str(i).decode_utf8() {
         Ok(t) => Ok(t.into()),
         Err(_) => Err(Error::new(i, ErrorKind::Escaped)),
@@ -36,8 +36,8 @@ fn decode_spayd_kv<'a>(
     k: &'a str,
     v: &'a str,
 ) -> Result<(SpaydString<'a>, SpaydString<'a>), Error<&'a str>> {
-    let k = decode_spayd_string(k)?;
-    let v = decode_spayd_string(v)?;
+    let k = decode_percent_encoding(k)?;
+    let v = decode_percent_encoding(v)?;
     Ok((k, v))
 }
 
