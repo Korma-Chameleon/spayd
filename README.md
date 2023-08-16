@@ -12,7 +12,6 @@ QR scanning is already implemented in libraries such as
 methods on mobile OSs.
 
 ## TODO
-Output SPAYD structure as text
 Enforce Required fields
 Percent encode of non-ascii
 CRC32 checks
