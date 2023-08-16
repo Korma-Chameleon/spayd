@@ -14,7 +14,7 @@ impl SpaydVersion {
 }
 
 pub type SpaydString<'a> = Cow<'a, str>;
-pub type SpaydValues<'a> = BTreeMap<SpaydString<'a>, SpaydString<'a>>;
+type SpaydValues<'a> = BTreeMap<SpaydString<'a>, SpaydString<'a>>;
 
 #[derive(Clone)]
 pub struct Spayd<'a> {
@@ -23,8 +23,14 @@ pub struct Spayd<'a> {
 }
 
 impl<'a> Spayd<'a> {
-    pub fn new(version: SpaydVersion, values: SpaydValues<'a>) -> Self {
-        Self { version, values }
+    pub fn new<V>(version: SpaydVersion, values: V) -> Self
+    where
+        V: IntoIterator<Item = (SpaydString<'a>, SpaydString<'a>)>,
+    {
+        Self {
+            version,
+            values: values.into_iter().collect(),
+        }
     }
 
     pub fn empty(version: SpaydVersion) -> Self {

@@ -1,4 +1,4 @@
-use crate::spayd::{Spayd, SpaydString, SpaydValues, SpaydVersion};
+use crate::spayd::{Spayd, SpaydString, SpaydVersion};
 use nom::{
     bytes::complete::{is_not, tag, take_until1, take_while},
     character::complete::digit1,
@@ -48,10 +48,8 @@ fn kv_pair(input: &str) -> IResult<&str, (SpaydString, SpaydString)> {
     )(input)
 }
 
-fn values(input: &str) -> IResult<&str, SpaydValues> {
-    map(separated_list1(tag("*"), kv_pair), |items| {
-        items.into_iter().collect()
-    })(input)
+fn values(input: &str) -> IResult<&str, Vec<(SpaydString, SpaydString)>> {
+    separated_list1(tag("*"), kv_pair)(input)
 }
 
 fn full_text(input: &str) -> IResult<&str, Spayd> {
@@ -130,14 +128,13 @@ mod tests {
 
         let kv_pairs = parsed.1;
         assert_eq!(
-            kv_pairs.get("ACC").map(AsRef::as_ref),
-            Some("CZ5855000000001265098001")
-        );
-        assert_eq!(kv_pairs.get("AM").map(AsRef::as_ref), Some("480.50"));
-        assert_eq!(kv_pairs.get("CC").map(AsRef::as_ref), Some("CZK"));
-        assert_eq!(
-            kv_pairs.get("MSG").map(AsRef::as_ref),
-            Some("Payment for the goods")
+            kv_pairs,
+            vec![
+                ("ACC".into(), "CZ5855000000001265098001".into()),
+                ("AM".into(), "480.50".into()),
+                ("CC".into(), "CZK".into()),
+                ("MSG".into(), "Payment for the goods".into())
+            ]
         );
     }
 
@@ -146,7 +143,7 @@ mod tests {
         let parsed = values("MSG:%40%3F%2A%24%21").unwrap();
         let kv_pairs = parsed.1;
 
-        assert_eq!(kv_pairs.get("MSG").map(AsRef::as_ref), "@?*$!".into());
+        assert_eq!(kv_pairs, vec![("MSG".into(), "@?*$!".into())]);
     }
 
     #[test]
