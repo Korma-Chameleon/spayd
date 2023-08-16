@@ -1,7 +1,7 @@
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, Formatter, Write};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct SpaydVersion {
@@ -72,19 +72,41 @@ impl<'a> Spayd<'a> {
     {
         self.values.insert(key.into(), value.into());
     }
+
+    /// Iterates over the fields in the SPAYD. No particular ordering
+    /// is guaranteed.
+    pub fn iter(&self) -> impl Iterator<Item = (&str, &str)> {
+        self.values.iter().map(|(k, v)| (k.as_ref(), v.as_ref()))
+    }
+
+    /// Iterates over the fields in canonic order. The keys are
+    /// alphabetical and the CRC32 field is excluded. This can be used to
+    /// create a cannonical represenataion of the SPAYD which can be CRC32 checked.
+    pub fn iter_canonic(&self) -> impl Iterator<Item = (&str, &str)> {
+        // As the fields are stored in a BTreeMap, they will have the right
+        // order. This will need to be updated if the storage is changed.
+        self.iter().filter(|(k, _)| *k != "CRC32")
+    }
+
+    /// Construct canonic representation for CRC32 checking
+    pub fn canonic_representation(&self) -> String {
+        let mut buf = String::new();
+
+        write!(buf, "SPD*{}.{}", self.version.major, self.version.minor).unwrap();
+        for (k, v) in self.iter_canonic() {
+            let k = utf8_percent_encode(k, ESCAPED).to_string();
+            let v = utf8_percent_encode(v, ESCAPED).to_string();
+            write!(buf, "*{}:{}", k, v).unwrap();
+        }
+        buf
+    }
 }
 
 const ESCAPED: &AsciiSet = &CONTROLS.add(b'%').add(b'*');
 
 impl<'a> Display for Spayd<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SPD*{}.{}", self.version.major, self.version.minor)?;
-        for (k, v) in self.values.iter() {
-            let k = utf8_percent_encode(k, ESCAPED).to_string();
-            let v = utf8_percent_encode(v, ESCAPED).to_string();
-            write!(f, "*{}:{}", k, v)?;
-        }
-        Ok(())
+        write!(f, "{}", self.canonic_representation())
     }
 }
 
@@ -102,6 +124,40 @@ mod tests {
     }
 
     #[test]
+    fn iter_canonical() {
+        let spayd = Spayd::new_v1_0(vec![
+            ("CC", "CZK"),
+            ("MSG", "Payment for the goods"),
+            ("AM", "480.50"),
+            ("ACC", "CZ5855000000001265098001"),
+            ("CRC32", "JUNKDATA"),
+        ]);
+        let mut iterator = spayd.iter_canonic();
+
+        assert_eq!(iterator.next(), Some(("ACC", "CZ5855000000001265098001")));
+        assert_eq!(iterator.next(), Some(("AM", "480.50")));
+        assert_eq!(iterator.next(), Some(("CC", "CZK")));
+        assert_eq!(iterator.next(), Some(("MSG", "Payment for the goods")));
+        assert_eq!(iterator.next(), None);
+    }
+
+    #[test]
+    fn cannonical_string() {
+        let spayd = Spayd::new_v1_0(vec![
+            ("CC", "CZK"),
+            ("MSG", "Payment for the goods"),
+            ("AM", "480.50"),
+            ("ACC", "CZ5855000000001265098001"),
+            ("CRC32", "JUNKDATA"),
+        ]);
+
+        assert_eq!(
+            spayd.canonic_representation(),
+            "SPD*1.0*ACC:CZ5855000000001265098001*AM:480.50*CC:CZK*MSG:Payment for the goods"
+        );
+    }
+
+    #[test]
     fn to_string() {
         let spayd = Spayd::new_v1_0(vec![
             ("ACC", "CZ5855000000001265098001"),
@@ -109,8 +165,6 @@ mod tests {
             ("CC", "CZK"),
             ("MSG", "Payment for the goods"),
         ]);
-        assert_eq!(spayd.version().major, 1);
-        assert_eq!(spayd.version().minor, 0);
 
         assert_eq!(
             spayd.to_string(),
