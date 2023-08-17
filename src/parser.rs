@@ -154,19 +154,19 @@ mod tests {
         .unwrap();
 
         assert_eq!(spayd.version(), SpaydVersion::new(1, 0));
-        assert_eq!(spayd.value("ACC"), Some("CZ5855000000001265098001"));
-        assert_eq!(spayd.value("AM"), Some("480.50"));
-        assert_eq!(spayd.value("CC"), Some("CZK"));
-        assert_eq!(spayd.value("MSG"), Some("Payment for the goods"));
-        assert_eq!(spayd.value("ALT-ACC"), None);
-        assert_eq!(spayd.value("RF"), None);
+        assert_eq!(spayd.field("ACC"), Some("CZ5855000000001265098001"));
+        assert_eq!(spayd.field("AM"), Some("480.50"));
+        assert_eq!(spayd.field("CC"), Some("CZK"));
+        assert_eq!(spayd.field("MSG"), Some("Payment for the goods"));
+        assert_eq!(spayd.field("ALT-ACC"), None);
+        assert_eq!(spayd.field("RF"), None);
     }
 
     #[test]
     fn percent_encoded() {
         let spayd = parse_spayd("SPD*1.0*MSG:%40%3F%2A%24%21").unwrap();
 
-        assert_eq!(spayd.value("MSG"), Some("@?*$!"));
+        assert_eq!(spayd.field("MSG"), Some("@?*$!"));
     }
 
     #[test]

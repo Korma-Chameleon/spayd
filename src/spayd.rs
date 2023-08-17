@@ -3,6 +3,9 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 
+/// Version number of the Short Payment Descriptor.
+///
+/// Currently there is only a standard for version 1.0.
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct SpaydVersion {
     pub major: u32,
@@ -22,16 +25,20 @@ impl Display for SpaydVersion {
 }
 
 pub type SpaydString<'a> = Cow<'a, str>;
-type SpaydValues<'a> = BTreeMap<SpaydString<'a>, SpaydString<'a>>;
+type SpaydFields<'a> = BTreeMap<SpaydString<'a>, SpaydString<'a>>;
 
-#[derive(Clone)]
+/// A Short Payment Descriptor structure containint the details of
+/// a requested payment.
+#[derive(Clone, PartialEq, Eq)]
 pub struct Spayd<'a> {
     version: SpaydVersion,
-    values: SpaydValues<'a>,
+    fields: SpaydFields<'a>,
 }
 
 impl<'a> Spayd<'a> {
-    pub fn new<I, K, V>(version: SpaydVersion, values: I) -> Self
+    /// Create a new SPAYD with the given version number and field values.
+    /// Using `new_v1_0` or `empty_v1_0` is preferable for most situations.
+    pub fn new<I, K, V>(version: SpaydVersion, fields: I) -> Self
     where
         I: IntoIterator<Item = (K, V)>,
         K: Into<SpaydString<'a>>,
@@ -39,50 +46,51 @@ impl<'a> Spayd<'a> {
     {
         Self {
             version,
-            values: values
+            fields: fields
                 .into_iter()
                 .map(|(k, v)| (k.into(), v.into()))
                 .collect(),
         }
     }
 
-    pub fn new_v1_0<I, K, V>(values: I) -> Self
+    /// Create a version 1.0 SPAYD with the given field values.
+    pub fn new_v1_0<I, K, V>(fields: I) -> Self
     where
         I: IntoIterator<Item = (K, V)>,
         K: Into<SpaydString<'a>>,
         V: Into<SpaydString<'a>>,
     {
-        Self::new(SpaydVersion { major: 1, minor: 0 }, values)
+        Self::new(SpaydVersion { major: 1, minor: 0 }, fields)
     }
 
-    pub fn empty(version: SpaydVersion) -> Self {
-        Self::new(version, SpaydValues::new())
-    }
-
+    /// Create an empty version 1.0 SPAYD.
     pub fn empty_v1_0() -> Self {
-        Self::empty(SpaydVersion { major: 1, minor: 0 })
+        Self::new_v1_0(SpaydFields::new())
     }
 
+    /// Get the version number.
     pub fn version(&self) -> SpaydVersion {
         self.version
     }
 
-    pub fn value(&self, key: &str) -> Option<&str> {
-        self.values.get(key).map(Cow::as_ref)
+    /// Get the value of the given field.
+    pub fn field(&self, key: &str) -> Option<&str> {
+        self.fields.get(key).map(Cow::as_ref)
     }
 
-    pub fn set_value<K, V>(&mut self, key: K, value: V)
+    /// Set the value of the given field.
+    pub fn set_field<K, V>(&mut self, key: K, value: V)
     where
         K: Into<SpaydString<'a>>,
         V: Into<SpaydString<'a>>,
     {
-        self.values.insert(key.into(), value.into());
+        self.fields.insert(key.into(), value.into());
     }
 
     /// Iterates over the fields in the SPAYD. No particular ordering
     /// is guaranteed.
     pub fn iter(&self) -> impl Iterator<Item = (&str, &str)> {
-        self.values.iter().map(|(k, v)| (k.as_ref(), v.as_ref()))
+        self.fields.iter().map(|(k, v)| (k.as_ref(), v.as_ref()))
     }
 
     /// Iterates over the fields in canonic order. The keys are
@@ -99,15 +107,16 @@ impl<'a> Spayd<'a> {
         let mut buf = String::new();
 
         buf.push_str(&self.version.to_string());
-        buf.push_str(&Self::values_to_string(&mut self.iter_canonic()));
+        buf.push_str(&Self::fields_to_string(&mut self.iter_canonic()));
 
         buf
     }
 
-    fn values_to_string(values: &mut dyn Iterator<Item = (&str, &str)>) -> String {
+    /// Format fields into a string according to the SPAYD standard.
+    fn fields_to_string(fields: &mut dyn Iterator<Item = (&str, &str)>) -> String {
         let mut buf = String::new();
 
-        for (k, v) in values {
+        for (k, v) in fields {
             buf.push('*');
             buf.push_str(&utf8_percent_encode(k, ESCAPED).to_string());
 
@@ -126,7 +135,7 @@ impl<'a> Display for Spayd<'a> {
             f,
             "{}{}",
             self.version.to_string(),
-            Self::values_to_string(&mut self.iter())
+            Self::fields_to_string(&mut self.iter())
         )
     }
 }

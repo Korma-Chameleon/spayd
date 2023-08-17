@@ -12,6 +12,7 @@ pub enum Crc32Ok {
     NotProvided,
 }
 
+/// Result value from CRC32 checks.
 pub type Crc32Result = Result<Crc32Ok, ()>;
 
 impl Crc32Ok {
@@ -32,7 +33,7 @@ impl<'a> Spayd<'a> {
     /// As the CRC32 field is optional, this will report success when the field
     /// is not supplied. To enforce the usage of CRC32 use require_crc32.
     pub fn check_crc32(&self) -> Crc32Result {
-        if let Some(crc32_text) = self.value("CRC32") {
+        if let Some(crc32_text) = self.field("CRC32") {
             // TODO: proper error
             let supplied_crc32 = u32::from_str_radix(crc32_text, 16).map_err(|_| ())?;
             let checksum = hash(self.canonic_representation().as_bytes());
