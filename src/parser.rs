@@ -62,6 +62,7 @@ fn is_ascii_printable(c: char) -> bool {
     c.is_ascii() && !c.is_ascii_control()
 }
 
+/// Parse text into a Spayd value.
 pub fn parse_spayd(input: &str) -> Result<Spayd, Error<&str>> {
     let parsed =
         all_consuming(map_parser(take_while(is_ascii_printable), full_text))(input).finish()?;

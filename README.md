@@ -1,8 +1,8 @@
 # SPAYD (Short Payment Descriptor)
 
 This library implements taxt processing for the Short Payment Descriptor format 
-(SPAYD or SPD). This is a simple text format for requesting payments in
-the Czech Republic and Slovakia. It can encode details of the payee,
+(SPAYD or SPD). This is a simple text format for requesting payments, mainly
+used in Czechia and the Slovak Republic. It can encode details of the payee,
 destination account (IBAN), amount etc.
 
 While Typically SPAYDs are sent as QR codes which can be scanned into a mobile
