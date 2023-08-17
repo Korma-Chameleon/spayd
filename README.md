@@ -13,6 +13,6 @@ methods on mobile OSs.
 
 ## TODO
 - Enforce Required fields
-- Value convewrsions for dates, IBAN, currency symbol etc
+- Value conversions for dates, IBAN, currency symbol etc
 - Docs
 - Error types
