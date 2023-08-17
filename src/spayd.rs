@@ -1,7 +1,7 @@
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
 
 #[derive(Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Debug)]
 pub struct SpaydVersion {
@@ -12,6 +12,12 @@ pub struct SpaydVersion {
 impl SpaydVersion {
     pub fn new(major: u32, minor: u32) -> Self {
         Self { major, minor }
+    }
+}
+
+impl Display for SpaydVersion {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "SPD*{}.{}", self.major, self.minor)
     }
 }
 
@@ -92,11 +98,21 @@ impl<'a> Spayd<'a> {
     pub fn canonic_representation(&self) -> String {
         let mut buf = String::new();
 
-        write!(buf, "SPD*{}.{}", self.version.major, self.version.minor).unwrap();
-        for (k, v) in self.iter_canonic() {
-            let k = utf8_percent_encode(k, ESCAPED).to_string();
-            let v = utf8_percent_encode(v, ESCAPED).to_string();
-            write!(buf, "*{}:{}", k, v).unwrap();
+        buf.push_str(&self.version.to_string());
+        buf.push_str(&Self::values_to_string(&mut self.iter_canonic()));
+
+        buf
+    }
+
+    fn values_to_string(values: &mut dyn Iterator<Item = (&str, &str)>) -> String {
+        let mut buf = String::new();
+
+        for (k, v) in values {
+            buf.push('*');
+            buf.push_str(&utf8_percent_encode(k, ESCAPED).to_string());
+
+            buf.push(':');
+            buf.push_str(&utf8_percent_encode(v, ESCAPED).to_string());
         }
         buf
     }
@@ -106,7 +122,12 @@ const ESCAPED: &AsciiSet = &CONTROLS.add(b'%').add(b'*');
 
 impl<'a> Display for Spayd<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.canonic_representation())
+        write!(
+            f,
+            "{}{}",
+            self.version.to_string(),
+            Self::values_to_string(&mut self.iter())
+        )
     }
 }
 
