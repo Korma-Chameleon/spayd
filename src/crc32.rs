@@ -1,5 +1,3 @@
-#![cfg(feature = "crc32")]
-
 use crate::spayd::Spayd;
 use crc32fast::hash;
 
