@@ -1,6 +1,7 @@
 [package]
 name = "spayd"
 description = "Text handling for Short Payment Descriptors (SPAYD or SPD)"
+homepage = "https://github.com/Korma-Chameleon/spayd"
 version = "0.1.0"
 edition = "2021"
 
