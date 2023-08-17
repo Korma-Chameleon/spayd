@@ -1,5 +1,6 @@
 [package]
 name = "spayd"
+description = "Text handling for Short Payment Descriptors (SPAYD or SPD)"
 version = "0.1.0"
 edition = "2021"
 
