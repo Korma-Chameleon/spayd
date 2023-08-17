@@ -2,6 +2,9 @@
 name = "spayd"
 description = "Text handling for Short Payment Descriptors (SPAYD or SPD)"
 homepage = "https://github.com/Korma-Chameleon/spayd"
+repository = "https://github.com/Korma-Chameleon/spayd"
+licence = "https://github.com/Korma-Chameleon/spayd"
+license-file = "LICENCE.txt"
 version = "0.1.0"
 edition = "2021"
 
