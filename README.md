@@ -13,6 +13,6 @@ methods on mobile OSs.
 
 ## TODO
 - Enforce Required fields
-- CRC32 checks
 - Value convewrsions for dates, IBAN, currency symbol etc
 - Docs
+- Error types
