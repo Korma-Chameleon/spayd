@@ -1,3 +1,4 @@
+use crate::error::SpaydError;
 use crate::spayd::{Spayd, SpaydString, SpaydVersion};
 use nom::{
     bytes::complete::{is_not, tag, take_until1, take_while},
@@ -63,10 +64,13 @@ fn is_ascii_printable(c: char) -> bool {
 }
 
 /// Parse text into a Spayd value.
-pub fn parse_spayd(input: &str) -> Result<Spayd, Error<&str>> {
+pub fn parse_spayd(input: &str) -> Result<Spayd, SpaydError> {
     let parsed =
         all_consuming(map_parser(take_while(is_ascii_printable), full_text))(input).finish()?;
-    Ok(parsed.1)
+
+    let spayd = parsed.1;
+    spayd.validate()?;
+    Ok(spayd)
 }
 
 #[cfg(test)]
@@ -165,7 +169,7 @@ mod tests {
 
     #[test]
     fn percent_encoded() {
-        let spayd = parse_spayd("SPD*1.0*MSG:%40%3F%2A%24%21").unwrap();
+        let spayd = parse_spayd("SPD*1.0*ACC:1234*MSG:%40%3F%2A%24%21").unwrap();
 
         assert_eq!(spayd.field("MSG"), Some("@?*$!"));
     }

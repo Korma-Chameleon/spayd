@@ -25,7 +25,7 @@
 //!
 //! let mut payment = Spayd::empty_v1_0();
 //! payment.set_field("ACC", account);
-//! payment.set_field("ACC", amount);
+//! payment.set_field("AM", amount);
 //! payment.set_field("CC", currency);
 //!
 //! println!("{}", payment.to_string());
@@ -33,10 +33,12 @@
 
 #[cfg(feature = "crc32")]
 mod crc32;
+mod error;
 mod parser;
 mod spayd;
 
 #[cfg(feature = "crc32")]
 pub use crate::crc32::{Crc32Ok, Crc32Result};
+pub use crate::error::SpaydError;
 pub use crate::parser::parse_spayd;
 pub use crate::spayd::{Spayd, SpaydVersion};

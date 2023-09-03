@@ -1,3 +1,4 @@
+use crate::error::SpaydError;
 use crate::spayd::Spayd;
 use crc32fast::hash;
 
@@ -13,13 +14,13 @@ pub enum Crc32Ok {
 }
 
 /// Result value from CRC32 checks.
-pub type Crc32Result = Result<Crc32Ok, ()>;
+pub type Crc32Result = Result<Crc32Ok, SpaydError>;
 
 impl Crc32Ok {
     pub fn require_crc32(&self) -> Crc32Result {
         match self {
             Self::Passed => Ok(Self::Passed),
-            Self::NotProvided => Err(()),
+            Self::NotProvided => Err(SpaydError::Crc32Failed),
         }
     }
 }
@@ -34,13 +35,15 @@ impl<'a> Spayd<'a> {
     /// is not supplied. To enforce the usage of CRC32 use require_crc32.
     pub fn check_crc32(&self) -> Crc32Result {
         if let Some(crc32_text) = self.field("CRC32") {
-            // TODO: proper error
-            let supplied_crc32 = u32::from_str_radix(crc32_text, 16).map_err(|_| ())?;
-            let checksum = hash(self.canonic_representation().as_bytes());
-            if supplied_crc32 == checksum {
-                Ok(Crc32Ok::Passed)
+            if let Ok(supplied_crc32) = u32::from_str_radix(crc32_text, 16).map_err(|_| ()) {
+                let checksum = hash(self.canonic_representation().as_bytes());
+                if supplied_crc32 == checksum {
+                    Ok(Crc32Ok::Passed)
+                } else {
+                    Err(SpaydError::Crc32Failed)
+                }
             } else {
-                Err(())
+                Err(SpaydError::Crc32Failed)
             }
         } else {
             Ok(Crc32Ok::NotProvided)
@@ -90,7 +93,7 @@ mod tests {
             ("CRC32", "12345678"),
         ]);
 
-        assert_eq!(spayd.check_crc32(), Err(()));
+        assert_eq!(spayd.check_crc32(), Err(SpaydError::Crc32Failed));
     }
 
     #[test]
@@ -102,7 +105,7 @@ mod tests {
             ("CRC32", "JUNK"),
         ]);
 
-        assert_eq!(spayd.check_crc32(), Err(()));
+        assert_eq!(spayd.check_crc32(), Err(SpaydError::Crc32Failed));
     }
 
     #[test]
@@ -113,7 +116,7 @@ mod tests {
             ("CC", "CZK"),
         ]);
 
-        assert_eq!(spayd.require_crc32(), Err(()));
+        assert_eq!(spayd.require_crc32(), Err(SpaydError::Crc32Failed));
     }
 
     #[test]
@@ -137,6 +140,6 @@ mod tests {
             ("CRC32", "12345678"),
         ]);
 
-        assert_eq!(spayd.require_crc32(), Err(()));
+        assert_eq!(spayd.require_crc32(), Err(SpaydError::Crc32Failed));
     }
 }

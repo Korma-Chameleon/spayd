@@ -3,6 +3,8 @@ use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 
+use crate::SpaydError;
+
 /// Version number of the Short Payment Descriptor.
 ///
 /// Currently there is only a standard for version 1.0.
@@ -87,6 +89,27 @@ impl<'a> Spayd<'a> {
         self.fields.insert(key.into(), value.into());
     }
 
+    /// Ensure that all required fields are present. In version 1.0 this
+    /// is only the ACC field.
+    fn check_required_fields(&self) -> Result<(), SpaydError> {
+        if self.field("ACC").is_none() {
+            Err(SpaydError::RequiredFieldMissing("ACC".into()))
+        } else {
+            Ok(())
+        }
+    }
+
+    /// Ensure that the SPAYD has all required fields and that the CRC
+    /// check is correct (if this feature is enabled).
+    pub fn validate(&self) -> Result<(), SpaydError> {
+        self.check_required_fields()?;
+
+        #[cfg(feature = "crc32")]
+        self.check_crc32()?;
+
+        Ok(())
+    }
+
     /// Iterates over the fields in the SPAYD. No particular ordering
     /// is guaranteed.
     pub fn iter(&self) -> impl Iterator<Item = (&str, &str)> {
@@ -134,7 +157,7 @@ impl<'a> Display for Spayd<'a> {
         write!(
             f,
             "{}{}",
-            self.version.to_string(),
+            self.version,
             Self::fields_to_string(&mut self.iter())
         )
     }
