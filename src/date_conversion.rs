@@ -38,7 +38,6 @@ impl<'a> Spayd<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::format::ParseErrorKind;
 
     #[test]
     fn due_date_correct_format() {
