@@ -13,5 +13,5 @@ methods on mobile OSs.
 
 ## TODO
 - Enforce Required fields
-- Value conversions for dates, IBAN, currency symbol etc
+- Value conversions for IBAN, currency symbol etc
 - Add Cargo keywords

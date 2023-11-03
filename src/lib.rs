@@ -33,6 +33,8 @@
 
 #[cfg(feature = "crc32")]
 mod crc32;
+#[cfg(feature = "chrono")]
+mod date_conversion;
 mod error;
 mod parser;
 mod spayd;
