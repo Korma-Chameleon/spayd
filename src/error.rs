@@ -17,6 +17,12 @@ pub enum SpaydError {
     #[cfg(feature = "crc32")]
     #[error("the data doesn't match the CRC32 checksum")]
     Crc32Failed,
+    /// Conversion failed. The field has an incorrect format.
+    #[error("couldn't convert value '{0}'")]
+    ConvertError(String),
+    /// The SPAYD value doesn't have the field for conversion.
+    #[error("field '{0}' is missing")]
+    FieldMissing(String),
 }
 
 impl From<NomError<&str>> for SpaydError {
