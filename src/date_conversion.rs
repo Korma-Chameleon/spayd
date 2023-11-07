@@ -6,7 +6,6 @@ const DUE_DATE: &str = "DT";
 
 impl<'a> Spayd<'a> {
     /// Get the due date as a Chrono NaiveDate
-    // TODO: error type
     pub fn due_date(&self) -> Result<NaiveDate, SpaydError> {
         if let Some(date_text) = self.field(DUE_DATE) {
             NaiveDate::parse_from_str(date_text, SPAYD_DATE_FMT)
