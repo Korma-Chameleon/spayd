@@ -31,16 +31,16 @@
 //! println!("{}", payment.to_string());
 //! ```
 
+mod convert;
 #[cfg(feature = "crc32")]
 mod crc32;
-#[cfg(feature = "chrono")]
-mod date_conversion;
 mod error;
 mod parser;
 mod spayd;
 
+pub use crate::convert::*;
 #[cfg(feature = "crc32")]
 pub use crate::crc32::{Crc32Ok, Crc32Result};
 pub use crate::error::SpaydError;
 pub use crate::parser::parse_spayd;
-pub use crate::spayd::{Spayd, SpaydVersion};
+pub use crate::spayd::*;
