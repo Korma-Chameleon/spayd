@@ -44,6 +44,29 @@ impl FromStr for IbanBic {
 }
 
 impl IbanBic {
+    /// Construct and IbanBic with only an IBAN and no BIC
+    pub fn iban_only<T>(iban: T) -> Self
+    where
+        T: ToString,
+    {
+        Self {
+            iban: iban.to_string(),
+            bic: None,
+        }
+    }
+
+    /// Construct and IbanBic with both an IBAN and a BIC
+    pub fn iban_bic<T, U>(iban: T, bic: U) -> Self
+    where
+        T: ToString,
+        U: ToString,
+    {
+        Self {
+            iban: iban.to_string(),
+            bic: Some(bic.to_string()),
+        }
+    }
+
     /// Parse the IBAN value into an Iban object from the iban_validate crate
     #[cfg(feature = "iban_validate")]
     pub fn parse_iban(&self) -> Result<Iban, SpaydError> {
