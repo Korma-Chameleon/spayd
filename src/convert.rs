@@ -1,12 +1,18 @@
 use std::str::FromStr;
 
 use crate::{IbanBic, Spayd, SpaydError};
+
 #[cfg(feature = "chrono")]
 use chrono::NaiveDate;
 
+#[cfg(feature = "iso_currency")]
+use iso_currency::Currency;
+
 const SPAYD_DATE_FMT: &str = "%Y%m%d";
+
 const FIELD_DUE_DATE: &str = "DT";
 const FIELD_ACC: &str = "ACC";
+const FIELD_CURRENCY: &str = "CC";
 
 impl<'a> Spayd<'a> {
     /// Get the value of a field converted using the convert function
@@ -22,12 +28,13 @@ impl<'a> Spayd<'a> {
     }
 
     /// Set the due date from a Chrono NaiveDate
-    fn set_field_converted<F, T>(&mut self, field: &'static str, value: T, convert: F)
+    fn set_field_converted<F, T, U>(&mut self, field: &'static str, value: T, convert: F)
     where
-        F: FnOnce(T) -> String,
+        F: FnOnce(T) -> U,
+        U: ToString,
     {
         let text = convert(value);
-        self.set_field(field, text);
+        self.set_field(field, text.to_string());
     }
 
     /// Get the account number as a separated IBAN and BIC
@@ -54,6 +61,20 @@ impl<'a> Spayd<'a> {
         self.set_field_converted(FIELD_DUE_DATE, date, |date| {
             date.format(SPAYD_DATE_FMT).to_string()
         })
+    }
+
+    /// Get the currency as an ISO currency
+    #[cfg(feature = "iso_currency")]
+    pub fn currency(&self) -> Result<Currency, SpaydError> {
+        self.field_converted(FIELD_CURRENCY, |currency| {
+            Currency::from_code(currency).ok_or(())
+        })
+    }
+
+    /// Set the currency using an ISO currency
+    #[cfg(feature = "iso_currency")]
+    pub fn set_currency(&mut self, currency: Currency) {
+        self.set_field_converted(FIELD_CURRENCY, currency, Currency::code)
     }
 }
 
