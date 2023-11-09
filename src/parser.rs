@@ -82,7 +82,7 @@ impl FromStr for Spayd {
 
 #[cfg(test)]
 mod tests {
-    // Most xxample data is from wikipedia
+    // Most example data is from wikipedia
     // https://en.wikipedia.org/wiki/Short_Payment_Descriptor
     use super::*;
 

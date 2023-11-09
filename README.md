@@ -12,6 +12,4 @@ QR scanning is already implemented in libraries such as
 methods on mobile OSs.
 
 ## TODO
-- Enforce Required fields
-- Value conversions for IBAN, currency symbol etc
-- Add Cargo keywords
+- Value conversions for amount (decimal)

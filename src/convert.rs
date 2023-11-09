@@ -8,11 +8,15 @@ use chrono::NaiveDate;
 #[cfg(feature = "iso_currency")]
 use iso_currency::Currency;
 
+#[cfg(feature = "rust_decimal")]
+use rust_decimal::Decimal;
+
 const SPAYD_DATE_FMT: &str = "%Y%m%d";
 
 const FIELD_DUE_DATE: &str = "DT";
 const FIELD_ACCOUNT: &str = "ACC";
 const FIELD_ALTERNATIVE_ACCOUNTS: &str = "ALT-ACC";
+const FIELD_AMOUNT: &str = "AM";
 const FIELD_CURRENCY: &str = "CC";
 
 impl Spayd {
@@ -85,6 +89,18 @@ impl Spayd {
         self.set_field_converted(FIELD_DUE_DATE, date, |date| {
             date.format(SPAYD_DATE_FMT).to_string()
         })
+    }
+
+    /// Get the payment amount as a decimal
+    #[cfg(feature = "rust_decimal")]
+    pub fn amount(&self) -> Result<Decimal, SpaydError> {
+        self.field_converted(FIELD_AMOUNT, Decimal::from_str)
+    }
+
+    /// Set the due date from a decimal
+    #[cfg(feature = "rust_decimal")]
+    pub fn set_amount(&mut self, amount: &Decimal) {
+        self.set_field_converted(FIELD_DUE_DATE, amount, Decimal::to_string)
     }
 
     /// Get the currency as an ISO currency
