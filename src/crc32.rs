@@ -25,7 +25,7 @@ impl Crc32Ok {
     }
 }
 
-impl<'a> Spayd<'a> {
+impl Spayd {
     /// Perform a CRC32 integrity check on the SPAYD to help ensure that it
     /// was received correctly. This check does not provide any assurance of
     /// the authenticity of the SPAYD value or any other form of cryptographic

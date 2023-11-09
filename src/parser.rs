@@ -1,5 +1,7 @@
+use std::str::FromStr;
+
 use crate::error::SpaydError;
-use crate::spayd::{Spayd, SpaydString, SpaydVersion};
+use crate::spayd::{Spayd, SpaydVersion};
 use nom::{
     bytes::complete::{is_not, tag, take_until1, take_while},
     character::complete::digit1,
@@ -26,30 +28,27 @@ fn header(input: &str) -> IResult<&str, SpaydVersion> {
     delimited(tag("SPD*"), version, tag("*"))(input)
 }
 
-fn decode_percent_encoding(i: &str) -> Result<SpaydString, Error<&str>> {
+fn decode_percent_encoding(i: &str) -> Result<String, Error<&str>> {
     match percent_decode_str(i).decode_utf8() {
-        Ok(t) => Ok(t.into()),
+        Ok(t) => Ok(t.to_string()),
         Err(_) => Err(Error::new(i, ErrorKind::Escaped)),
     }
 }
 
-fn decode_spayd_kv<'a>(
-    k: &'a str,
-    v: &'a str,
-) -> Result<(SpaydString<'a>, SpaydString<'a>), Error<&'a str>> {
+fn decode_spayd_kv<'a>(k: &'a str, v: &'a str) -> Result<(String, String), Error<&'a str>> {
     let k = decode_percent_encoding(k)?;
     let v = decode_percent_encoding(v)?;
     Ok((k, v))
 }
 
-fn kv_pair(input: &str) -> IResult<&str, (SpaydString, SpaydString)> {
+fn kv_pair(input: &str) -> IResult<&str, (String, String)> {
     map_res(
         separated_pair(take_until1(":"), tag(":"), is_not("*")),
         |(k, v)| decode_spayd_kv(k, v),
     )(input)
 }
 
-fn values(input: &str) -> IResult<&str, Vec<(SpaydString, SpaydString)>> {
+fn values(input: &str) -> IResult<&str, Vec<(String, String)>> {
     separated_list1(tag("*"), kv_pair)(input)
 }
 
@@ -64,13 +63,21 @@ fn is_ascii_printable(c: char) -> bool {
 }
 
 /// Parse text into a Spayd value.
-pub fn parse_spayd(input: &str) -> Result<Spayd, SpaydError> {
+fn parse_spayd(input: &str) -> Result<Spayd, SpaydError> {
     let parsed =
         all_consuming(map_parser(take_while(is_ascii_printable), full_text))(input).finish()?;
 
     let spayd = parsed.1;
     spayd.validate()?;
     Ok(spayd)
+}
+
+impl FromStr for Spayd {
+    type Err = SpaydError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        parse_spayd(s)
+    }
 }
 
 #[cfg(test)]
@@ -153,10 +160,10 @@ mod tests {
 
     #[test]
     fn full_example() {
-        let spayd = parse_spayd(
-            "SPD*1.0*ACC:CZ5855000000001265098001*AM:480.50*CC:CZK*MSG:Payment for the goods",
-        )
-        .unwrap();
+        let spayd: Spayd =
+            "SPD*1.0*ACC:CZ5855000000001265098001*AM:480.50*CC:CZK*MSG:Payment for the goods"
+                .parse()
+                .unwrap();
 
         assert_eq!(spayd.version(), SpaydVersion::new(1, 0));
         assert_eq!(spayd.field("ACC"), Some("CZ5855000000001265098001"));
@@ -169,21 +176,21 @@ mod tests {
 
     #[test]
     fn percent_encoded() {
-        let spayd = parse_spayd("SPD*1.0*ACC:1234*MSG:%40%3F%2A%24%21").unwrap();
+        let spayd: Spayd = "SPD*1.0*ACC:1234*MSG:%40%3F%2A%24%21".parse().unwrap();
 
         assert_eq!(spayd.field("MSG"), Some("@?*$!"));
     }
 
     #[test]
     fn incomplete() {
-        assert!(parse_spayd("SPD*1.0").is_err());
-        assert!(parse_spayd("SPD*1.0*").is_err());
-        assert!(parse_spayd("SPD*1.0*ACC").is_err());
-        assert!(parse_spayd("SPD*1.0*ACC:").is_err());
+        assert!("SPD*1.0".parse::<Spayd>().is_err());
+        assert!("SPD*1.0*".parse::<Spayd>().is_err());
+        assert!("SPD*1.0*ACC".parse::<Spayd>().is_err());
+        assert!("SPD*1.0*ACC:".parse::<Spayd>().is_err());
     }
 
     #[test]
     fn non_ascii() {
-        assert!(parse_spayd("SPD*1.0*PŘÍKLAD:123").is_err());
+        assert!("SPD*1.0*PŘÍKLAD:123".parse::<Spayd>().is_err());
     }
 }

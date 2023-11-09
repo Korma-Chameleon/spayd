@@ -5,9 +5,9 @@
 //!
 //! Parsing SPAYD text:
 //! ```
-//! use spayd::parse_spayd;
+//! use spayd::Spayd;
 //!
-//! let payment = parse_spayd("SPD*1.0*ACC:CZ1355000000000000222885*AM:250.00*CC:CZK").unwrap();
+//! let payment: Spayd = "SPD*1.0*ACC:CZ1355000000000000222885*AM:250.00*CC:CZK".parse().unwrap();
 //! let account = payment.field("ACC").unwrap();
 //! let amount = payment.field("AM").unwrap();
 //! let currency = payment.field("CC").unwrap();
@@ -44,5 +44,4 @@ pub use crate::convert::*;
 pub use crate::crc32::{Crc32Ok, Crc32Result};
 pub use crate::error::SpaydError;
 pub use crate::iban_bic::*;
-pub use crate::parser::parse_spayd;
 pub use crate::spayd::*;

@@ -13,7 +13,7 @@ pub struct IbanBic {
     pub bic: Option<String>,
 }
 
-impl<'a> Display for IbanBic {
+impl Display for IbanBic {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         if let Some(bic) = &self.bic {
             write!(f, "{}+{}", self.iban, bic)

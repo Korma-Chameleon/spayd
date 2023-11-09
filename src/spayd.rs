@@ -1,5 +1,4 @@
 use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
-use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 
@@ -26,31 +25,30 @@ impl Display for SpaydVersion {
     }
 }
 
-pub type SpaydString<'a> = Cow<'a, str>;
-type SpaydFields<'a> = BTreeMap<SpaydString<'a>, SpaydString<'a>>;
+type SpaydFields = BTreeMap<String, String>;
 
 /// A Short Payment Descriptor structure containint the details of
 /// a requested payment.
 #[derive(Clone, PartialEq, Eq, Debug)]
-pub struct Spayd<'a> {
+pub struct Spayd {
     version: SpaydVersion,
-    fields: SpaydFields<'a>,
+    fields: SpaydFields,
 }
 
-impl<'a> Spayd<'a> {
+impl<'a> Spayd {
     /// Create a new SPAYD with the given version number and field values.
     /// Using `new_v1_0` or `empty_v1_0` is preferable for most situations.
     pub fn new<I, K, V>(version: SpaydVersion, fields: I) -> Self
     where
         I: IntoIterator<Item = (K, V)>,
-        K: Into<SpaydString<'a>>,
-        V: Into<SpaydString<'a>>,
+        K: ToString,
+        V: ToString,
     {
         Self {
             version,
             fields: fields
                 .into_iter()
-                .map(|(k, v)| (k.into(), v.into()))
+                .map(|(k, v)| (k.to_string(), v.to_string()))
                 .collect(),
         }
     }
@@ -59,8 +57,8 @@ impl<'a> Spayd<'a> {
     pub fn new_v1_0<I, K, V>(fields: I) -> Self
     where
         I: IntoIterator<Item = (K, V)>,
-        K: Into<SpaydString<'a>>,
-        V: Into<SpaydString<'a>>,
+        K: ToString,
+        V: ToString,
     {
         Self::new(SpaydVersion { major: 1, minor: 0 }, fields)
     }
@@ -77,16 +75,16 @@ impl<'a> Spayd<'a> {
 
     /// Get the value of the given field.
     pub fn field(&self, key: &str) -> Option<&str> {
-        self.fields.get(key).map(Cow::as_ref)
+        self.fields.get(key).map(String::as_ref)
     }
 
     /// Set the value of the given field.
     pub fn set_field<K, V>(&mut self, key: K, value: V)
     where
-        K: Into<SpaydString<'a>>,
-        V: Into<SpaydString<'a>>,
+        K: ToString,
+        V: ToString,
     {
-        self.fields.insert(key.into(), value.into());
+        self.fields.insert(key.to_string(), value.to_string());
     }
 
     /// Ensure that all required fields are present. In version 1.0 this
@@ -152,7 +150,7 @@ impl<'a> Spayd<'a> {
 
 const ESCAPED: &AsciiSet = &CONTROLS.add(b'%').add(b'*');
 
-impl<'a> Display for Spayd<'a> {
+impl Display for Spayd {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(
             f,

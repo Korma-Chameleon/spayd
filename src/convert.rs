@@ -15,7 +15,7 @@ const FIELD_ACCOUNT: &str = "ACC";
 const FIELD_ALTERNATIVE_ACCOUNTS: &str = "ALT-ACC";
 const FIELD_CURRENCY: &str = "CC";
 
-impl<'a> Spayd<'a> {
+impl Spayd {
     /// Get the value of a field converted using the convert function
     fn field_converted<T, E, F>(&self, field: &str, convert: F) -> Result<T, SpaydError>
     where
