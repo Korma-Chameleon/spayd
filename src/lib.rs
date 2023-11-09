@@ -61,6 +61,7 @@ mod convert;
 #[cfg(feature = "crc32")]
 mod crc32;
 mod error;
+/// Constants for the standard field names.
 pub mod fields;
 mod iban_bic;
 mod parser;
