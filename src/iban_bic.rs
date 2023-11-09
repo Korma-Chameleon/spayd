@@ -43,6 +43,12 @@ impl FromStr for IbanBic {
     }
 }
 
+impl From<Iban> for IbanBic {
+    fn from(iban: Iban) -> Self {
+        Self::iban_only(iban)
+    }
+}
+
 impl IbanBic {
     /// Construct and IbanBic with only an IBAN and no BIC
     pub fn iban_only<T>(iban: T) -> Self
@@ -50,7 +56,7 @@ impl IbanBic {
         T: ToString,
     {
         Self {
-            iban: iban.to_string(),
+            iban: iban.to_string().replace(" ", ""),
             bic: None,
         }
     }
@@ -62,8 +68,8 @@ impl IbanBic {
         U: ToString,
     {
         Self {
-            iban: iban.to_string(),
-            bic: Some(bic.to_string()),
+            iban: iban.to_string().replace(" ", ""),
+            bic: Some(bic.to_string().replace(" ", "")),
         }
     }
 

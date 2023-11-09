@@ -43,8 +43,11 @@ impl Spayd {
     }
 
     /// Set the account IBAN from an IBAN and BIC
-    pub fn set_account(&mut self, account: &IbanBic) {
-        self.set_field_converted(fields::ACCOUNT, account, IbanBic::to_string)
+    pub fn set_account<T>(&mut self, account: T)
+    where
+        T: Into<IbanBic>,
+    {
+        self.set_field_converted(fields::ACCOUNT, account.into(), |ib| ib.to_string())
     }
 
     /// Get alternative account numbers
@@ -117,6 +120,7 @@ impl Spayd {
 #[cfg(test)]
 mod iban_tests {
     use super::*;
+    use iban::Iban;
 
     #[test]
     fn acc_no_bic() {
@@ -133,6 +137,18 @@ mod iban_tests {
         assert_eq!(
             spayd.account(),
             Ok(IbanBic::iban_bic("CZ5855000000001265098001", "RZBCCZPP"))
+        )
+    }
+
+    #[test]
+    fn set_acc_from_iban() {
+        let iban: Iban = "CZ5855000000001265098001".parse().unwrap();
+        let mut spayd = Spayd::empty_v1_0();
+        spayd.set_account(iban);
+
+        assert_eq!(
+            spayd.account(),
+            Ok(IbanBic::iban_only("CZ5855000000001265098001"))
         )
     }
 
