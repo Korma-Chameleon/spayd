@@ -10,6 +10,3 @@ banking app, this library only aims to handle the text processing of the data.
 QR scanning is already implemented in libraries such as
 [qr_code](https://crates.io/crates/qr_code) and may be provided by other
 methods on mobile OSs.
-
-## TODO
-- Value conversions for amount (decimal)
