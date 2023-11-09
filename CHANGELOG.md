@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0] - 2023-08-17
+
+### Added
+
+- Format conversions for commonly used data types, decimal for currency, chrono for dates etc
+- Support for FromStr and str::parse()
+
+### Changed
+
+- Spayd data structures now use owned Strings internally and don't require a lifetime parameter
+
+
 ## [0.1.2] - 2023-08-17
 
 ### Added
