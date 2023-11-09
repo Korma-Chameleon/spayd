@@ -8,11 +8,10 @@
 //! use spayd::{Spayd, fields};
 //!
 //! let payment: Spayd = "SPD*1.0*ACC:CZ1355000000000000222885*AM:250.00*CC:CZK".parse().unwrap();
-//! let account = payment.field(fields::ACCOUNT).unwrap();
-//! let amount = payment.field(fields::AMOUNT).unwrap();
-//! let currency = payment.field(fields::CURRENCY).unwrap();
 //!
-//! println!("Please pay {}{} to account {}", amount, currency, account);
+//! assert_eq!(payment.field(fields::ACCOUNT), Some("CZ1355000000000000222885"));
+//! assert_eq!(payment.field(fields::AMOUNT), Some("250.00"));
+//! assert_eq!(payment.field(fields::CURRENCY), Some("CZK"));
 //! ```
 //!
 //! Creatig a SPAYD:
@@ -28,8 +27,35 @@
 //! payment.set_field(fields::AMOUNT, amount);
 //! payment.set_field(fields::CURRENCY, currency);
 //!
-//! println!("{}", payment.to_string());
+//! assert_eq!(payment.to_string(), "SPD*1.0*ACC:CZ1355000000000000222885*AM:250.00*CC:CZK")
 //! ```
+//!
+//! This crate also provides features (chrono, iban_validate, iso_currency, rust_decimal) for
+//! optional conversions to/from commonly used types.
+//! ```
+//! use spayd::{Spayd, fields};
+//! use iban::Iban;
+//! use chrono::NaiveDate;
+//! use rust_decimal::Decimal;
+//! use iso_currency::Currency;
+//!
+//! let account: Iban = "CZ1355000000000000222885".parse().unwrap();
+//! let amount = Decimal::new(250, 0);;
+//! let currency = Currency::CZK;
+//! let due_date = NaiveDate::from_ymd_opt(2023, 10, 31).unwrap();
+//!
+//! let mut payment = Spayd::empty_v1_0();
+//! payment.set_account(account);
+//! payment.set_amount(&amount);
+//! payment.set_currency(currency);
+//! payment.set_due_date(&due_date);
+//!
+//! assert_eq!(payment.account().unwrap().to_iban(), Ok(account));
+//! assert_eq!(payment.amount(), Ok(amount));
+//! assert_eq!(payment.currency(), Ok(currency));
+//! assert_eq!(payment.due_date(), Ok(due_date));
+//! ```
+//!
 
 mod convert;
 #[cfg(feature = "crc32")]

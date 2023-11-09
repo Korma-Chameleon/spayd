@@ -75,7 +75,7 @@ impl IbanBic {
 
     /// Parse the IBAN value into an Iban object from the iban_validate crate
     #[cfg(feature = "iban_validate")]
-    pub fn parse_iban(&self) -> Result<Iban, SpaydError> {
+    pub fn to_iban(&self) -> Result<Iban, SpaydError> {
         self.iban
             .parse()
             .or(Err(SpaydError::ConvertError(self.iban.to_owned())))
