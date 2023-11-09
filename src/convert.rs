@@ -11,7 +11,8 @@ use iso_currency::Currency;
 const SPAYD_DATE_FMT: &str = "%Y%m%d";
 
 const FIELD_DUE_DATE: &str = "DT";
-const FIELD_ACC: &str = "ACC";
+const FIELD_ACCOUNT: &str = "ACC";
+const FIELD_ALTERNATIVE_ACCOUNTS: &str = "ALT-ACC";
 const FIELD_CURRENCY: &str = "CC";
 
 impl<'a> Spayd<'a> {
@@ -38,13 +39,36 @@ impl<'a> Spayd<'a> {
     }
 
     /// Get the account number as a separated IBAN and BIC
-    pub fn acc_iban_bic(&self) -> Result<IbanBic, SpaydError> {
-        self.field_converted(FIELD_ACC, IbanBic::from_str)
+    pub fn account(&self) -> Result<IbanBic, SpaydError> {
+        self.field_converted(FIELD_ACCOUNT, IbanBic::from_str)
     }
 
-    /// Set the account IBAN from an Iban value
-    pub fn set_acc_iban_bic(&mut self, iba_bic: &IbanBic) {
-        self.set_field_converted(FIELD_ACC, iba_bic, IbanBic::to_string)
+    /// Set the account IBAN from an IBAN and BIC
+    pub fn set_account(&mut self, account: &IbanBic) {
+        self.set_field_converted(FIELD_ACCOUNT, account, IbanBic::to_string)
+    }
+
+    /// Get alternative account numbers
+    pub fn alternative_accounts(&self) -> Result<Vec<IbanBic>, SpaydError> {
+        self.field_converted(FIELD_ALTERNATIVE_ACCOUNTS, |text| {
+            text.split(',').map(IbanBic::from_str).collect()
+        })
+    }
+
+    /// Set alternative account numbers
+    pub fn set_alternative_accounts<I, T>(&mut self, accounts: I)
+    where
+        I: IntoIterator<Item = T>,
+        T: Into<IbanBic>,
+    {
+        self.set_field_converted(FIELD_ALTERNATIVE_ACCOUNTS, accounts, |accounts| {
+            accounts
+                .into_iter()
+                .map(Into::into)
+                .map(|acc| acc.to_string())
+                .collect::<Vec<String>>()
+                .join(",")
+        })
     }
 
     /// Get the due date as a Chrono NaiveDate
@@ -87,11 +111,8 @@ mod iban_tests {
     fn acc_no_bic() {
         let spayd = Spayd::new_v1_0(vec![("ACC", "CZ5855000000001265098001")]);
         assert_eq!(
-            spayd.acc_iban_bic(),
-            Ok(IbanBic {
-                iban: "CZ5855000000001265098001".to_owned(),
-                bic: None
-            })
+            spayd.account(),
+            Ok(IbanBic::iban_only("CZ5855000000001265098001"))
         )
     }
 
@@ -99,11 +120,52 @@ mod iban_tests {
     fn acc_with_bic() {
         let spayd = Spayd::new_v1_0(vec![("ACC", "CZ5855000000001265098001+RZBCCZPP")]);
         assert_eq!(
-            spayd.acc_iban_bic(),
-            Ok(IbanBic {
-                iban: "CZ5855000000001265098001".to_owned(),
-                bic: Some("RZBCCZPP".to_owned())
-            })
+            spayd.account(),
+            Ok(IbanBic::iban_bic("CZ5855000000001265098001", "RZBCCZPP"))
+        )
+    }
+
+    #[test]
+    fn two_alt_accs() {
+        let spayd = Spayd::new_v1_0(vec![(
+            "ALT-ACC",
+            "CZ5855000000001265098001+RZBCCZPP,CZ5855000000001265098001",
+        )]);
+        assert_eq!(
+            spayd.alternative_accounts(),
+            Ok(vec![
+                IbanBic::iban_bic("CZ5855000000001265098001", "RZBCCZPP"),
+                IbanBic::iban_only("CZ5855000000001265098001"),
+            ])
+        )
+    }
+
+    #[test]
+    fn set_one_alt_acc() {
+        let mut spayd = Spayd::empty_v1_0();
+        spayd.set_alternative_accounts(vec![IbanBic::iban_bic(
+            "CZ5855000000001265098001",
+            "RZBCCZPP",
+        )]);
+        assert_eq!(
+            spayd,
+            Spayd::new_v1_0(vec![("ALT-ACC", "CZ5855000000001265098001+RZBCCZPP")])
+        )
+    }
+
+    #[test]
+    fn set_two_alt_accs() {
+        let mut spayd = Spayd::empty_v1_0();
+        spayd.set_alternative_accounts(vec![
+            IbanBic::iban_bic("CZ5855000000001265098001", "RZBCCZPP"),
+            IbanBic::iban_only("CZ5855000000001265098001"),
+        ]);
+        assert_eq!(
+            spayd,
+            Spayd::new_v1_0(vec![(
+                "ALT-ACC",
+                "CZ5855000000001265098001+RZBCCZPP,CZ5855000000001265098001"
+            )])
         )
     }
 }

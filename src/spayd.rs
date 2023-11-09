@@ -31,7 +31,7 @@ type SpaydFields<'a> = BTreeMap<SpaydString<'a>, SpaydString<'a>>;
 
 /// A Short Payment Descriptor structure containint the details of
 /// a requested payment.
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Spayd<'a> {
     version: SpaydVersion,
     fields: SpaydFields<'a>,
