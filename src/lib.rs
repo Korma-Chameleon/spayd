@@ -5,28 +5,28 @@
 //!
 //! Parsing SPAYD text:
 //! ```
-//! use spayd::Spayd;
+//! use spayd::{Spayd, fields};
 //!
 //! let payment: Spayd = "SPD*1.0*ACC:CZ1355000000000000222885*AM:250.00*CC:CZK".parse().unwrap();
-//! let account = payment.field("ACC").unwrap();
-//! let amount = payment.field("AM").unwrap();
-//! let currency = payment.field("CC").unwrap();
+//! let account = payment.field(fields::ACCOUNT).unwrap();
+//! let amount = payment.field(fields::AMOUNT).unwrap();
+//! let currency = payment.field(fields::CURRENCY).unwrap();
 //!
 //! println!("Please pay {}{} to account {}", amount, currency, account);
 //! ```
 //!
 //! Creatig a SPAYD:
 //! ```
-//! use spayd::Spayd;
+//! use spayd::{Spayd, fields};
 //!
 //! let account = "CZ1355000000000000222885";
 //! let amount = "250.00";
 //! let currency = "CZK";
 //!
 //! let mut payment = Spayd::empty_v1_0();
-//! payment.set_field("ACC", account);
-//! payment.set_field("AM", amount);
-//! payment.set_field("CC", currency);
+//! payment.set_field(fields::ACCOUNT, account);
+//! payment.set_field(fields::AMOUNT, amount);
+//! payment.set_field(fields::CURRENCY, currency);
 //!
 //! println!("{}", payment.to_string());
 //! ```
@@ -35,6 +35,7 @@ mod convert;
 #[cfg(feature = "crc32")]
 mod crc32;
 mod error;
+pub mod fields;
 mod iban_bic;
 mod parser;
 mod spayd;

@@ -1,4 +1,5 @@
 use crate::error::SpaydError;
+use crate::fields;
 use crate::spayd::Spayd;
 use crc32fast::hash;
 
@@ -34,7 +35,7 @@ impl Spayd {
     /// As the CRC32 field is optional, this will report success when the field
     /// is not supplied. To enforce the usage of CRC32 use require_crc32.
     pub fn check_crc32(&self) -> Crc32Result {
-        if let Some(crc32_text) = self.field("CRC32") {
+        if let Some(crc32_text) = self.field(fields::CRC32_CHECKSUM) {
             if let Ok(supplied_crc32) = u32::from_str_radix(crc32_text, 16).map_err(|_| ()) {
                 let checksum = hash(self.canonic_representation().as_bytes());
                 if supplied_crc32 == checksum {

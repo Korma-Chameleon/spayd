@@ -2,6 +2,7 @@ use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 use std::collections::BTreeMap;
 use std::fmt::{Display, Formatter};
 
+use crate::fields;
 use crate::SpaydError;
 
 /// Version number of the Short Payment Descriptor.
@@ -120,7 +121,7 @@ impl<'a> Spayd {
     pub fn iter_canonic(&self) -> impl Iterator<Item = (&str, &str)> {
         // As the fields are stored in a BTreeMap, they will have the right
         // order. This will need to be updated if the storage is changed.
-        self.iter().filter(|(k, _)| *k != "CRC32")
+        self.iter().filter(|(k, _)| *k != fields::CRC32_CHECKSUM)
     }
 
     /// Construct canonic representation for CRC32 checking

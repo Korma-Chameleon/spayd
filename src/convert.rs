@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{IbanBic, Spayd, SpaydError};
+use crate::{fields, IbanBic, Spayd, SpaydError};
 
 #[cfg(feature = "chrono")]
 use chrono::NaiveDate;
@@ -11,13 +11,8 @@ use iso_currency::Currency;
 #[cfg(feature = "rust_decimal")]
 use rust_decimal::Decimal;
 
+#[cfg(feature = "chrono")]
 const SPAYD_DATE_FMT: &str = "%Y%m%d";
-
-const FIELD_DUE_DATE: &str = "DT";
-const FIELD_ACCOUNT: &str = "ACC";
-const FIELD_ALTERNATIVE_ACCOUNTS: &str = "ALT-ACC";
-const FIELD_AMOUNT: &str = "AM";
-const FIELD_CURRENCY: &str = "CC";
 
 impl Spayd {
     /// Get the value of a field converted using the convert function
@@ -44,17 +39,17 @@ impl Spayd {
 
     /// Get the account number as a separated IBAN and BIC
     pub fn account(&self) -> Result<IbanBic, SpaydError> {
-        self.field_converted(FIELD_ACCOUNT, IbanBic::from_str)
+        self.field_converted(fields::ACCOUNT, IbanBic::from_str)
     }
 
     /// Set the account IBAN from an IBAN and BIC
     pub fn set_account(&mut self, account: &IbanBic) {
-        self.set_field_converted(FIELD_ACCOUNT, account, IbanBic::to_string)
+        self.set_field_converted(fields::ACCOUNT, account, IbanBic::to_string)
     }
 
     /// Get alternative account numbers
     pub fn alternative_accounts(&self) -> Result<Vec<IbanBic>, SpaydError> {
-        self.field_converted(FIELD_ALTERNATIVE_ACCOUNTS, |text| {
+        self.field_converted(fields::ALTERNATIVE_ACCOUNTS, |text| {
             text.split(',').map(IbanBic::from_str).collect()
         })
     }
@@ -65,7 +60,7 @@ impl Spayd {
         I: IntoIterator<Item = T>,
         T: Into<IbanBic>,
     {
-        self.set_field_converted(FIELD_ALTERNATIVE_ACCOUNTS, accounts, |accounts| {
+        self.set_field_converted(fields::ALTERNATIVE_ACCOUNTS, accounts, |accounts| {
             accounts
                 .into_iter()
                 .map(Into::into)
@@ -78,7 +73,7 @@ impl Spayd {
     /// Get the due date as a Chrono NaiveDate
     #[cfg(feature = "chrono")]
     pub fn due_date(&self) -> Result<NaiveDate, SpaydError> {
-        self.field_converted(FIELD_DUE_DATE, |text| {
+        self.field_converted(fields::DUE_DATE, |text| {
             NaiveDate::parse_from_str(text, SPAYD_DATE_FMT)
         })
     }
@@ -86,7 +81,7 @@ impl Spayd {
     /// Set the due date from a Chrono NaiveDate
     #[cfg(feature = "chrono")]
     pub fn set_due_date(&mut self, date: &NaiveDate) {
-        self.set_field_converted(FIELD_DUE_DATE, date, |date| {
+        self.set_field_converted(fields::DUE_DATE, date, |date| {
             date.format(SPAYD_DATE_FMT).to_string()
         })
     }
@@ -94,19 +89,19 @@ impl Spayd {
     /// Get the payment amount as a decimal
     #[cfg(feature = "rust_decimal")]
     pub fn amount(&self) -> Result<Decimal, SpaydError> {
-        self.field_converted(FIELD_AMOUNT, Decimal::from_str)
+        self.field_converted(fields::AMOUNT, Decimal::from_str)
     }
 
     /// Set the due date from a decimal
     #[cfg(feature = "rust_decimal")]
     pub fn set_amount(&mut self, amount: &Decimal) {
-        self.set_field_converted(FIELD_DUE_DATE, amount, Decimal::to_string)
+        self.set_field_converted(fields::AMOUNT, amount, Decimal::to_string)
     }
 
     /// Get the currency as an ISO currency
     #[cfg(feature = "iso_currency")]
     pub fn currency(&self) -> Result<Currency, SpaydError> {
-        self.field_converted(FIELD_CURRENCY, |currency| {
+        self.field_converted(fields::CURRENCY, |currency| {
             Currency::from_code(currency).ok_or(())
         })
     }
@@ -114,7 +109,7 @@ impl Spayd {
     /// Set the currency using an ISO currency
     #[cfg(feature = "iso_currency")]
     pub fn set_currency(&mut self, currency: Currency) {
-        self.set_field_converted(FIELD_CURRENCY, currency, Currency::code)
+        self.set_field_converted(fields::CURRENCY, currency, Currency::code)
     }
 }
 
